@@ -1,13 +1,44 @@
-import { memo } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toggleMenu } from '../utils/appSlice';
+import { YOUTUBE_SEARCH_API } from '../utils/constants';
+import { cacheResults } from '../utils/searchSlice';
 
 const Head = () => {
-	// const toggleMenu = useSelector(store => store.)
+	const [searchQuery, setSearchQuery] = useState("")
+	const [suggestions, setSuggestions] = useState([])
+	const [showSuggestions, setShowSuggestions] = useState(false)
 	const dispatch = useDispatch()
+	const searchCache = useSelector(store => store.search)
 
 	const toggleMenuHandler = () => {
 		dispatch(toggleMenu())
+	}
+
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			if (searchCache[searchQuery]) {
+				setSuggestions(searchCache[searchQuery])
+			} else {
+				getSearchSuggestion()
+			}
+		}, 200)
+
+		return () => {
+			clearTimeout(timer)
+		}
+		
+	}, [searchQuery])
+
+	const getSearchSuggestion = async() => {
+		const data = await fetch(YOUTUBE_SEARCH_API + searchQuery)
+		const json = await data.json()
+		setSuggestions(json[1])
+
+		// Update Cache
+		dispatch(cacheResults({
+			[searchQuery]: json[1]
+		}))
 	}
 
 	return (
@@ -27,10 +58,38 @@ const Head = () => {
 					/>
 				</a>
 			</div>
-			<div className='col-span-10 text-center px-10'>
-				<input className='w-1/2 border border-gray-400 rounded-l-full p-2' type="text" />
-				<button className='border border-gray-400 rounded-r-full py-2 px-5 bg-gray-100'>🔍</button>
+			<div className='col-span-10 px-10'>
+				<div className='flex justify-center'>	
+					<input className='w-1/2 border border-gray-400 rounded-l-full p-2 px-5' type="text" 
+						value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+						onFocus={() => setShowSuggestions(true)}
+						onBlur={() => setShowSuggestions(false)}
+					/>
+					<button className='border border-gray-400 rounded-r-full py-2 px-5 bg-gray-100'>
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className='mx-2'>
+										<circle cx="11" cy="11" r="8" />
+										<path d="m21 21-4.35-4.35" />
+						</svg>
+					</button>
+				</div>
+				{showSuggestions && searchQuery && (
+					<div className="fixed z-10 bg-[#212121] text-white py-2 px-1 w-[32rem] left-[36%] shadow-lg rounded-xl border border-gray-100">
+						<ul>
+							{suggestions.map((s) => (
+								<li key={s} className="py-2 px-3 hover:bg-[#292929] flex">
+									<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className='mx-2'>
+										<circle cx="11" cy="11" r="8" />
+										<path d="m21 21-4.35-4.35" />
+									</svg>
+									{s}
+								</li>
+							))}
+						</ul>
+					</div>
+					)
+				}
 			</div>
+
 			<div className='col-span-1'>
 				<img className='h-8' src="https://www.iconpacks.net/icons/2/free-user-icon-3296-thumb.png" alt="user" />
 			</div>
