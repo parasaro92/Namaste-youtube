@@ -19,7 +19,7 @@ const VideoContainer = () => {
 
   return (
     <div className='flex flex-wrap'>
-      {videos[0] && <VideoCardPromoted info={videos[0]} />}
+      {/* {videos[0] && <VideoCardPromoted info={videos[0]} />} */}
       {videos.map(v => (
         <Link to={"/watch?v=" + v.id}>
           <VideoCard key={v.id} info={v} />
